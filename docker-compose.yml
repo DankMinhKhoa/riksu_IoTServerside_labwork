@@ -20,8 +20,6 @@ services:
       - TZ=Europe/Helsinki
     volumes:
       - ./influxdata:/var/lib/influxdb
-    ports:
-      - "38086:8086"
     restart: unless-stopped
 
   # Define a Telegraf service
