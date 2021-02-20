@@ -12,18 +12,6 @@ services:
       - ./node-red-data:/data
     restart: unless-stopped
 
-  # Define an grafana service
-  grafana:
-    image: grafana/grafana:latest
-    hostname: grafana.docker
-    ports:
-      - "33000:3000" 
-    environment:
-      - TZ=Europe/Helsinki
-    volumes:
-      - ./grafana_data:/var/lib/grafana
-    restart: unless-stopped
-
   # Define an InfluxDB service
   influxdb:
     image: influxdb:1.8
