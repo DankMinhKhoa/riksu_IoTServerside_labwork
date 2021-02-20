@@ -1,0 +1,104 @@
+version: "3.9"
+services:
+  # Define node-red service
+  node-red:
+    image: nodered/node-red:latest
+    hostname: nodered.docker
+    environment:
+      - TZ=Europe/Helsinki
+    ports:
+      - "30000:1880"
+    volumes:
+      - ./node-red-data:/data
+    restart: unless-stopped
+
+  # Define an grafana service
+  grafana:
+    image: grafana/grafana:latest
+    hostname: grafana.docker
+    ports:
+      - "33000:3000" 
+    environment:
+      - TZ=Europe/Helsinki
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+  # Define an InfluxDB service
+  influxdb:
+    image: influxdb:1.8
+    hostname: influxdb.docker
+    environment:
+      - TZ=Europe/Helsinki
+    volumes:
+      - ./influxdata:/var/lib/influxdb
+    ports:
+      - "38086:8086"
+    restart: unless-stopped
+
+  # Define a Telegraf service
+  telegraf:
+    image: telegraf:latest
+    environment:
+      - TZ=Europe/Helsinki
+      - INFLUXDB_URL=http://influxdb:8086
+    links:
+      - influxdb
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    expose:
+      - "8092"
+      - "8094"
+      - "8125"
+    restart: unless-stopped
+
+  chronograf:
+    image: chronograf:latest
+    hostname: chronograf.docker
+    environment:
+      - TZ=Europe/Helsinki
+      - INFLUXDB_URL=http://influxdb:8086
+      - KAPACITOR_URL=http://kapacitor:9092
+    expose:
+      - "8888"
+    links:
+      - influxdb
+      - kapacitor
+    restart: unless-stopped
+
+  # Define a Kapacitor service
+  kapacitor:
+    image: kapacitor:latest
+    hostname: kapacitor.docker
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Europe/Helsinki
+      - KAPACITOR_HOSTNAME=kapacitor
+      - KAPACITOR_INFLUXDB_0_URLS_0=http://influxdb:8086
+    links:
+      - influxdb
+    expose:
+      - "9092"
+    restart: unless-stopped
+
+  # Define a service for using the influx CLI tool.
+  # docker-compose run influxdb-cli
+  influxdb-cli:
+    image: influxdb:latest
+    entrypoint:
+      - influx
+      - -host
+      - influxdb
+    links:
+      - influxdb
+  # Define a service for using the kapacitor CLI tool.
+  # docker-compose run kapacitor-cli
+  kapacitor-cli:
+    image: kapacitor:latest
+    entrypoint: bash
+    environment:
+      KAPACITOR_URL: http://kapacitor:9092
+    links:
+      - kapacitor
